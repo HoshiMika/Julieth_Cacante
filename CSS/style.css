@@ -516,6 +516,28 @@ input{
 
 }
 
+.btn-secondary:disabled{
+
+    opacity:.5;
+
+    cursor:not-allowed;
+
+    background:var(--color-secondary);
+
+    color:var(--color-text);
+
+    border-color:var(--color-border);
+
+}
+
+.btn-secondary:disabled:hover{
+
+    background:var(--color-secondary);
+
+    color:var(--color-text);
+
+}
+
 /*==============================
         CARD BASE
 ===============================*/
@@ -1188,5 +1210,297 @@ img{
 .footer-dev a:hover{
 
     color:var(--color-primary);
+
+}
+
+/*==================================================
+    SECCIÓN DE RESERVA DE REGALOS
+    (formulario, buscador y tarjetas de regalo)
+    Ninguna de estas clases tenía CSS: se veían como
+    texto plano apilado, sin tarjetas ni cuadrícula.
+==================================================*/
+
+.gift-section{
+
+    padding:60px 0;
+
+}
+
+.gift-card{
+
+    background:var(--color-white);
+
+    border-radius:var(--radius);
+
+    box-shadow:var(--shadow);
+
+    padding:45px 35px;
+
+}
+
+.gift-card .section-title{
+
+    text-align:center;
+
+    margin-bottom:35px;
+
+}
+
+.form-group{
+
+    margin-bottom:22px;
+
+}
+
+.form-group label{
+
+    display:block;
+
+    font-weight:600;
+
+    color:var(--color-title);
+
+    margin-bottom:8px;
+
+    font-size:.95rem;
+
+}
+
+.form-group input{
+
+    width:100%;
+
+    padding:14px 18px;
+
+    border:1px solid var(--color-border);
+
+    border-radius:12px;
+
+    font-family:"Poppins", sans-serif;
+
+    font-size:1rem;
+
+    color:var(--color-text);
+
+    background:var(--color-background);
+
+    transition:var(--transition);
+
+}
+
+.form-group input:focus{
+
+    outline:none;
+
+    border-color:var(--color-primary);
+
+    box-shadow:0 0 0 3px rgba(200,169,126,.2);
+
+}
+
+/*==============================
+        CUADRÍCULA DE REGALOS
+===============================*/
+
+.gift-container{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+
+    gap:20px;
+
+    margin-top:10px;
+
+}
+
+.gift-item{
+
+    display:flex;
+
+    flex-direction:column;
+
+    background:var(--color-background);
+
+    border:1px solid var(--color-border);
+
+    border-radius:16px;
+
+    padding:22px;
+
+    text-align:center;
+
+    transition:var(--transition);
+
+}
+
+.gift-item:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:var(--shadow);
+
+    border-color:var(--color-primary);
+
+}
+
+.gift-item.seleccionado{
+
+    border-color:var(--color-primary);
+
+    background:var(--color-secondary);
+
+    box-shadow:0 0 0 3px rgba(200,169,126,.25);
+
+}
+
+.gift-item.agotado{
+
+    opacity:.6;
+
+}
+
+.gift-icon{
+
+    font-size:2.4rem;
+
+    margin-bottom:10px;
+
+}
+
+.gift-body h3{
+
+    font-size:1.05rem;
+
+    color:var(--color-title);
+
+    margin-bottom:6px;
+
+}
+
+.gift-category{
+
+    display:inline-block;
+
+    font-size:.75rem;
+
+    color:var(--color-primary-dark);
+
+    background:rgba(200,169,126,.15);
+
+    padding:4px 12px;
+
+    border-radius:20px;
+
+    margin-bottom:12px;
+
+}
+
+.gift-status{
+
+    margin-bottom:8px;
+
+}
+
+.badge{
+
+    display:inline-block;
+
+    padding:5px 14px;
+
+    border-radius:20px;
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+}
+
+.badge-success{
+
+    background:rgba(76,175,80,.15);
+
+    color:var(--color-success);
+
+}
+
+.badge-warning{
+
+    background:rgba(255,167,38,.18);
+
+    color:#B26A00;
+
+}
+
+.badge-danger{
+
+    background:rgba(229,57,53,.12);
+
+    color:var(--color-danger);
+
+}
+
+.gift-stock{
+
+    font-size:.85rem;
+
+    color:var(--color-text);
+
+    margin-bottom:16px;
+
+}
+
+.gift-footer{
+
+    margin-top:auto;
+
+}
+
+.gift-footer .btn-primary,
+.gift-footer .btn-secondary{
+
+    width:100%;
+
+    padding:12px 20px;
+
+    font-size:.9rem;
+
+}
+
+.empty-result{
+
+    grid-column:1 / -1;
+
+    text-align:center;
+
+    padding:50px 20px;
+
+    color:var(--color-text);
+
+}
+
+.empty-result h2{
+
+    font-size:2.5rem;
+
+    margin-bottom:10px;
+
+}
+
+@media(max-width:600px){
+
+    .gift-card{
+
+        padding:30px 20px;
+
+    }
+
+    .gift-container{
+
+        grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+
+        gap:14px;
+
+    }
 
 }
