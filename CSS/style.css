@@ -1072,3 +1072,121 @@ img{
     }
 
 }
+
+/*==================================================
+    FOOTER
+    (antes no existía NINGÚN estilo para .footer,
+    se veía como texto plano sin diseño)
+==================================================*/
+
+.footer{
+
+    background:var(--color-title);
+
+    color:var(--color-white);
+
+    text-align:center;
+
+    padding:60px 20px 30px;
+
+    margin-top:40px;
+
+}
+
+.footer h2{
+
+    font-family:"Playfair Display", serif;
+
+    font-size:1.8rem;
+
+    margin-bottom:8px;
+
+}
+
+.footer p{
+
+    color:var(--color-secondary);
+
+    opacity:.85;
+
+    margin-bottom:25px;
+
+}
+
+.footer-icons{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:16px;
+
+    margin-bottom:25px;
+
+}
+
+.footer-icons a{
+
+    width:42px;
+
+    height:42px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.08);
+
+    color:var(--color-white);
+
+    text-decoration:none;
+
+    transition:var(--transition);
+
+}
+
+.footer-icons a:hover{
+
+    background:var(--color-primary);
+
+    transform:translateY(-3px);
+
+}
+
+.footer small{
+
+    display:block;
+
+    color:var(--color-secondary);
+
+    opacity:.7;
+
+    font-size:.8rem;
+
+}
+
+.footer-dev{
+
+    margin-top:16px;
+
+    opacity:.55 !important;
+
+}
+
+.footer-dev a{
+
+    color:inherit;
+
+    text-decoration:underline;
+
+}
+
+.footer-dev a:hover{
+
+    color:var(--color-primary);
+
+}
