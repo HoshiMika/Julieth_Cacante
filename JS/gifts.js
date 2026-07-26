@@ -340,6 +340,26 @@ const gifts = [
         cantidad: 1,
         reservados: 0,
         disponible: true
+    },
+
+    {
+        id: 30,
+        nombre: "Plancha Eléctrica para Asar",
+        categoria: CATEGORIAS.COCINA,
+        icono: "🔥",
+        cantidad: 1,
+        reservados: 0,
+        disponible: true
+    },
+
+    {
+        id: 31,
+        nombre: "Poncha Ropa",
+        categoria: CATEGORIAS.LAVANDERIA,
+        icono: "🧺",
+        cantidad: 1,
+        reservados: 0,
+        disponible: true
     }
 
 ];
