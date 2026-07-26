@@ -14,50 +14,84 @@ document.addEventListener("DOMContentLoaded", () => {
         "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    if (prefiereMenosMovimiento) {
-
-        return;
-
-    }
-
     const secciones = document.querySelectorAll(
         "section:not(.hero)"
     );
 
-    if (!("IntersectionObserver" in window)) {
+    // Red de seguridad: si algo falla (navegador viejo,
+    // IntersectionObserver que nunca dispara, error de
+    // JS, etc.), esto garantiza que TODO el contenido
+    // se termine mostrando igual, así el efecto no haya
+    // funcionado. Nunca debe quedar nada invisible.
+    function mostrarTodo() {
+
+        secciones.forEach((seccion) => {
+
+            seccion.classList.add("in-view");
+
+        });
+
+    }
+
+    if (
+
+        prefiereMenosMovimiento ||
+        !("IntersectionObserver" in window)
+
+    ) {
+
+        mostrarTodo();
 
         return;
 
     }
 
-    const observador = new IntersectionObserver(
+    try {
 
-        (entradas) => {
+        const observador = new IntersectionObserver(
 
-            entradas.forEach((entrada) => {
+            (entradas) => {
 
-                if (entrada.isIntersecting) {
+                entradas.forEach((entrada) => {
 
-                    entrada.target.classList.add("in-view");
+                    if (entrada.isIntersecting) {
 
-                    observador.unobserve(entrada.target);
+                        entrada.target.classList.add("in-view");
 
-                }
+                        observador.unobserve(entrada.target);
 
-            });
+                    }
 
-        },
+                });
 
-        { threshold: 0.15 }
+            },
 
-    );
+            { threshold: 0.15 }
 
-    secciones.forEach((seccion) => {
+        );
 
-        seccion.classList.add("reveal");
+        secciones.forEach((seccion) => {
 
-        observador.observe(seccion);
+            seccion.classList.add("reveal");
 
-    });
+            observador.observe(seccion);
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Falló el efecto de scroll, mostrando todo:",
+            error
+        );
+
+        mostrarTodo();
+
+    }
+
+    // Por si el observer se queda "pegado" en algún
+    // navegador raro: a los 4 segundos, se muestra todo
+    // sin excepción, haya funcionado el efecto o no.
+    setTimeout(mostrarTodo, 4000);
 
 });
