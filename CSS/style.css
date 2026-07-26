@@ -331,7 +331,17 @@ input{
 
     position:relative;
 
-    background:#C8A97E;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(20,16,10,.55),
+            rgba(20,16,10,.7)
+        ),
+        url("assets/img/foto1.jpeg");
+
+    background-size:cover;
+
+    background-position:center;
 
 }
 
@@ -1500,6 +1510,114 @@ img{
         grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
 
         gap:14px;
+
+    }
+
+}
+
+/*==================================================
+    REVELADO AL HACER SCROLL
+==================================================*/
+
+.reveal{
+
+    opacity:0;
+
+    transform:translateY(28px);
+
+    transition:opacity .8s ease, transform .8s ease;
+
+}
+
+.reveal.in-view{
+
+    opacity:1;
+
+    transform:translateY(0);
+
+}
+
+/*==================================================
+    ACENTO EN EL CONTADOR
+==================================================*/
+
+.counter .box{
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.counter .box::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:0;
+
+    left:0;
+
+    right:0;
+
+    height:4px;
+
+    background:linear-gradient(
+        90deg,
+        var(--color-primary),
+        var(--color-primary-dark)
+    );
+
+}
+
+/*==================================================
+    FLECHA DE SCROLL EN EL HERO
+==================================================*/
+
+.hero-scroll-cue{
+
+    position:absolute;
+
+    bottom:28px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    color:var(--color-white);
+
+    opacity:.75;
+
+    font-size:1.4rem;
+
+    animation:flotar 2.2s ease-in-out infinite;
+
+}
+
+@keyframes flotar{
+
+    0%, 100%{ transform:translate(-50%, 0); }
+
+    50%{ transform:translate(-50%, 10px); }
+
+}
+
+@media(prefers-reduced-motion: reduce){
+
+    .reveal{
+
+        opacity:1;
+
+        transform:none;
+
+        transition:none;
+
+    }
+
+    .hero-scroll-cue{
+
+        animation:none;
 
     }
 
