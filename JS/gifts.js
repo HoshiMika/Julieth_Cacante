@@ -300,6 +300,46 @@ const gifts = [
         cantidad: 5,
         reservados: 0,
         disponible: true
+    },
+
+    {
+        id: 26,
+        nombre: "Refractarias de Vidrio",
+        categoria: CATEGORIAS.COCINA,
+        icono: "🍱",
+        cantidad: 1,
+        reservados: 0,
+        disponible: true
+    },
+
+    {
+        id: 27,
+        nombre: "Bandejas",
+        categoria: CATEGORIAS.COCINA,
+        icono: "🍽️",
+        cantidad: 1,
+        reservados: 0,
+        disponible: true
+    },
+
+    {
+        id: 28,
+        nombre: "Kit para Ensaladas",
+        categoria: CATEGORIAS.COCINA,
+        icono: "🥗",
+        cantidad: 1,
+        reservados: 0,
+        disponible: true
+    },
+
+    {
+        id: 29,
+        nombre: "Difusor de Aceites Esenciales",
+        categoria: CATEGORIAS.SALA,
+        icono: "🕯️",
+        cantidad: 1,
+        reservados: 0,
+        disponible: true
     }
 
 ];
@@ -308,8 +348,6 @@ const gifts = [
                 VARIABLES GLOBALES
 ======================================================*/
 
-
-let invitadoActual = null;
 
 let regalosFiltrados = [...gifts];
 
@@ -914,38 +952,6 @@ function mostrarSeleccion(regalo) {
 
 function validarFormulario() {
 
-    const nombre =
-        document
-        .getElementById("guestName")
-        .value
-        .trim();
-
-    const telefono =
-        document
-        .getElementById("guestPhone")
-        .value
-        .trim();
-
-    if (nombre.length < 3) {
-
-        mostrarError(
-            "Escribe tu nombre completo."
-        );
-
-        return false;
-
-    }
-
-    if (telefono.length < 7) {
-
-        mostrarError(
-            "Número de celular inválido."
-        );
-
-        return false;
-
-    }
-
     if (!window.regaloSeleccionado) {
 
         mostrarError(
@@ -996,37 +1002,16 @@ async function reservarRegalo() {
 
     mostrarCargando(true);
 
-    // Forma del objeto pensada para que "regalo.id" pueda
-    // consultarse con where("regalo.id","==",...) en firebase.js
-    const reserva = {
+    // Reserva 100% anónima: no se lee ni se guarda nombre,
+    // celular ni correo de nadie. Solo se identifica QUÉ
+    // regalo se está reservando.
+    const infoRegalo = {
 
-        nombre:
-            document
-            .getElementById("guestName")
-            .value
-            .trim(),
+        id: regalo.id,
 
-        telefono:
-            document
-            .getElementById("guestPhone")
-            .value
-            .trim(),
+        nombre: regalo.nombre,
 
-        correo:
-            document
-            .getElementById("guestEmail")
-            .value
-            .trim(),
-
-        regalo: {
-            id: regalo.id,
-            nombre: regalo.nombre,
-            cantidad: regalo.cantidad
-        },
-
-        categoria: regalo.categoria,
-
-        fecha: new Date().toISOString()
+        cantidad: regalo.cantidad
 
     };
 
@@ -1044,13 +1029,16 @@ async function reservarRegalo() {
         // si otro invitado reserva al mismo tiempo, uno
         // de los dos recibirá el error de "ya reservado"
         // en vez de duplicar la reserva.
-        await FirebaseDB.guardarReserva(reserva);
+        await FirebaseDB.guardarReserva(infoRegalo);
 
         if (window.EmailService) {
 
             try {
 
-                await EmailService.enviarCorreoReserva(reserva);
+                await EmailService.enviarCorreoReserva({
+                    regalo: infoRegalo,
+                    fecha: new Date().toISOString()
+                });
 
             } catch (errorCorreo) {
 
@@ -1067,8 +1055,6 @@ async function reservarRegalo() {
         }
 
         regalo.reservados++;
-
-        invitadoActual = reserva;
 
         refrescarRegalos();
 

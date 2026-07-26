@@ -1,6 +1,15 @@
 /*=====================================================
                 FIREBASE.JS
-                PARTE 1
+======================================================
+    MODELO SIMPLIFICADO (100% anónimo):
+    Ya no se guarda nombre, celular ni correo de nadie
+    en ningún lado. Solo existe UNA colección,
+    "contadores_regalos", con un documento por regalo
+    que guarda cuántas unidades han sido reservadas
+    (ej. { reservados: 1 }). Ese número es lo único que
+    viaja entre el navegador de los invitados y la base
+    de datos, así que no hay ningún dato personal que
+    proteger ni que se pueda filtrar.
 ======================================================*/
 
 /*=====================================================
@@ -15,19 +24,11 @@ import {
 
     collection,
 
-    addDoc,
+    doc,
 
     getDocs,
 
-    deleteDoc,
-
-    doc,
-
     onSnapshot,
-
-    query,
-
-    where,
 
     runTransaction
 
@@ -61,68 +62,38 @@ const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
 
-/*=====================================================
-                COLECCIÓN
-======================================================*/
-
-const COLLECTION = "reservas";
-
-/*=====================================================
-                EXPORTAR
-======================================================*/
+const CONTADORES = "contadores_regalos";
 
 window.FirebaseDB = {
 
     db,
 
-    COLLECTION
+    CONTADORES
 
 };
 
 /*=====================================================
-                FIN PARTE 1
+            RESERVAR (sin datos personales)
+======================================================
+    Transacción atómica: lee cuántas unidades del
+    regalo ya están reservadas y, solo si todavía hay
+    cupo (reservadosActuales < cantidadTotal), suma 1.
+    Si dos invitados confirman al mismo tiempo, Firestore
+    reintenta la transacción para que nunca se pase del
+    total disponible.
 ======================================================*/
-/*=====================================================
-                FIREBASE.JS
-                PARTE 2
-======================================================*/
 
-/*=====================================================
-            GUARDAR RESERVA
-======================================================*/
-
-/*
-    NOTA IMPORTANTE:
-    La versión anterior hacía "leer si ya existe" y luego
-    "escribir" en dos pasos separados. Eso es una condición
-    de carrera: si dos invitados confirman casi al mismo
-    tiempo, ambos pueden pasar la validación antes de que
-    cualquiera termine de guardar, y el mismo regalo queda
-    reservado dos veces.
-
-    Para evitarlo usamos una transacción de Firestore
-    (runTransaction). Dentro de una transacción, Firestore
-    garantiza que la lectura y la escritura se ejecuten
-    de forma atómica: si otra reserva se cuela en medio,
-    la transacción se reintenta automáticamente. Además
-    respetamos "cantidad" (hay regalos con más de 1 unidad,
-    como "Juego de Sábanas" o "Lluvia de Sobres"), usando
-    un documento contador por regalo.
-*/
-
-const CONTADORES = "contadores_regalos";
-
-async function guardarReservaFirebase(reserva){
+async function guardarReservaFirebase(regaloInfo){
 
     try{
 
-        const idRegalo = reserva.regalo.id;
+        const contadorRef = doc(
 
-        const cantidadTotal = reserva.regalo.cantidad || 1;
+            db,
+            CONTADORES,
+            String(regaloInfo.id)
 
-        const contadorRef = doc(db, CONTADORES, String(idRegalo));
-
-        const nuevaReservaRef = doc(collection(db, COLLECTION));
+        );
 
         await runTransaction(db, async (transaccion) => {
 
@@ -131,6 +102,8 @@ async function guardarReservaFirebase(reserva){
             const reservadosActuales = contadorSnap.exists()
                 ? (contadorSnap.data().reservados || 0)
                 : 0;
+
+            const cantidadTotal = regaloInfo.cantidad || 1;
 
             if(reservadosActuales >= cantidadTotal){
 
@@ -146,16 +119,11 @@ async function guardarReservaFirebase(reserva){
                 { merge: true }
             );
 
-            transaccion.set(nuevaReservaRef, reserva);
-
         });
 
-        console.log(
-            "Reserva guardada:",
-            nuevaReservaRef.id
-        );
+        console.log("Reserva registrada (anónima).");
 
-        return nuevaReservaRef.id;
+        return true;
 
     }
     catch(error){
@@ -169,110 +137,76 @@ async function guardarReservaFirebase(reserva){
 }
 
 /*=====================================================
-        VALIDAR REGALO RESERVADO
+        LIBERAR UNA UNIDAD DE UN REGALO
+======================================================
+    Para cuando el organizador necesita corregir una
+    reserva manualmente (por ejemplo, si alguien avisó
+    que ya no puede traer el regalo). Simplemente resta
+    1 al contador, nunca queda en negativo.
 ======================================================*/
 
-async function regaloYaReservado(idRegalo){
+async function liberarRegalo(idRegalo){
 
-    const consulta = query(
+    try{
 
-        collection(db, COLLECTION),
+        const contadorRef = doc(
 
-        where("regalo.id","==",idRegalo)
+            db,
+            CONTADORES,
+            String(idRegalo)
 
-    );
+        );
 
-    const resultado = await getDocs(consulta);
+        await runTransaction(db, async (transaccion) => {
 
-    return !resultado.empty;
+            const contadorSnap = await transaccion.get(contadorRef);
 
-}
+            const actual = contadorSnap.exists()
+                ? (contadorSnap.data().reservados || 0)
+                : 0;
 
-/*=====================================================
-        BUSCAR RESERVA
-======================================================*/
+            transaccion.set(
+                contadorRef,
+                { reservados: Math.max(0, actual - 1) },
+                { merge: true }
+            );
 
-async function obtenerReservaPorRegalo(idRegalo){
+        });
 
-    const consulta = query(
+        return true;
 
-        collection(db, COLLECTION),
+    }
+    catch(error){
 
-        where("regalo.id","==",idRegalo)
+        console.error(error);
 
-    );
-
-    const resultado = await getDocs(consulta);
-
-    if(resultado.empty){
-
-        return null;
+        return false;
 
     }
 
-    const documento = resultado.docs[0];
-
-    return{
-
-        id:documento.id,
-
-        ...documento.data()
-
-    };
-
 }
 
 /*=====================================================
-            EXPORTAR
-======================================================*/
-
-window.FirebaseDB.guardarReserva =
-
-    guardarReservaFirebase;
-
-window.FirebaseDB.regaloYaReservado =
-
-    regaloYaReservado;
-
-window.FirebaseDB.obtenerReserva =
-
-    obtenerReservaPorRegalo;
-
-/*=====================================================
-            FIN PARTE 2
-======================================================*/
-/*=====================================================
-                FIREBASE.JS
-                PARTE 3
-======================================================*/
-
-/*=====================================================
-            ESCUCHAR CAMBIOS
+            ESCUCHAR CAMBIOS EN VIVO
 ======================================================*/
 
 function escucharReservas() {
 
-    const reservasRef = collection(db, COLLECTION);
+    const contadoresRef = collection(db, CONTADORES);
 
-    onSnapshot(reservasRef, (snapshot) => {
+    onSnapshot(contadoresRef, (snapshot) => {
 
-        const reservas = [];
+        const conteos = {};
 
         snapshot.forEach((doc) => {
 
-            reservas.push({
-
-                id: doc.id,
-
-                ...doc.data()
-
-            });
+            conteos[doc.id] = doc.data().reservados || 0;
 
         });
 
-        actualizarReservasLocales(reservas);
+        actualizarReservasLocales(conteos);
 
-        console.log("Reservas sincronizadas:", reservas.length);
+        console.log("Disponibilidad sincronizada.");
 
     }, (error) => {
 
@@ -283,39 +217,19 @@ function escucharReservas() {
 }
 
 /*=====================================================
-        ACTUALIZAR RESERVAS
+        ACTUALIZAR TARJETAS EN PANTALLA
 ======================================================*/
 
-function actualizarReservasLocales(reservas){
+function actualizarReservasLocales(conteos){
 
     if(typeof gifts === "undefined") return;
 
-    gifts.forEach(regalo =>{
+    gifts.forEach(regalo => {
 
-        regalo.reservados = 0;
-
-    });
-
-    reservas.forEach(reserva=>{
-
-        const regalo = gifts.find(
-
-            g => g.id === reserva.regalo.id
-
-        );
-
-        if(regalo){
-
-            regalo.reservados = 1;
-
-        }
+        regalo.reservados = conteos[regalo.id] || 0;
 
     });
 
-    // Estas son las funciones reales que dibujan las tarjetas
-    // de regalo en pantalla (definidas en gifts.js). Antes se
-    // llamaba a "renderizarRegalos"/"cargarEstadisticas", que
-    // pertenecían a app.js y nunca actualizaban el DOM real.
     if(typeof actualizarEstados === "function"){
 
         actualizarEstados();
@@ -335,244 +249,14 @@ function actualizarReservasLocales(reservas){
 }
 
 /*=====================================================
-        OBTENER RESERVAS
+        EXPORTAR FUNCIONES
 ======================================================*/
 
-async function obtenerReservasFirebase(){
+window.FirebaseDB.guardarReserva = guardarReservaFirebase;
 
-    const snapshot = await getDocs(
+window.FirebaseDB.liberarRegalo = liberarRegalo;
 
-        collection(db, COLLECTION)
-
-    );
-
-    const reservas = [];
-
-    snapshot.forEach(doc=>{
-
-        reservas.push({
-
-            id:doc.id,
-
-            ...doc.data()
-
-        });
-
-    });
-
-    return reservas;
-
-}
-
-/*=====================================================
-        EXPORTAR
-======================================================*/
-
-window.FirebaseDB.obtenerReservas =
-
-    obtenerReservasFirebase;
-
-window.FirebaseDB.escucharReservas =
-
-    escucharReservas;
-
-/*=====================================================
-        NOTA
-======================================================
-    Antes aquí había un segundo "escucharReservas()"
-    en DOMContentLoaded. Eso generaba DOS listeners de
-    Firestore activos al mismo tiempo (éste y el que ya
-    dispara "iniciarFirebase()" en la Parte 5), duplicando
-    lecturas y refrescos de pantalla. Se deja un único
-    punto de entrada: iniciarFirebase().
-======================================================*/
-
-/*=====================================================
-                FIN PARTE 3
-======================================================*/
-/*=====================================================
-                FIREBASE.JS
-                PARTE 4
-======================================================*/
-
-/*=====================================================
-            ELIMINAR RESERVA
-======================================================*/
-
-async function eliminarReservaFirebase(idReserva){
-
-    try{
-
-        await deleteDoc(
-
-            doc(db, COLLECTION, idReserva)
-
-        );
-
-        console.log(
-
-            "Reserva eliminada:",
-
-            idReserva
-
-        );
-
-        return true;
-
-    }
-    catch(error){
-
-        console.error(error);
-
-        return false;
-
-    }
-
-}
-
-/*=====================================================
-            LIBERAR REGALO
-======================================================*/
-
-async function liberarRegalo(idRegalo){
-
-    try{
-
-        const reserva = await obtenerReservaPorRegalo(
-
-            idRegalo
-
-        );
-
-        if(!reserva){
-
-            console.warn(
-
-                "El regalo ya está disponible."
-
-            );
-
-            return false;
-
-        }
-
-        await eliminarReservaFirebase(
-
-            reserva.id
-
-        );
-
-        return true;
-
-    }
-    catch(error){
-
-        console.error(error);
-
-        return false;
-
-    }
-
-}
-
-/*=====================================================
-            OBTENER UNA RESERVA
-======================================================*/
-
-async function obtenerReserva(idReserva){
-
-    const reservas = await obtenerReservasFirebase();
-
-    return reservas.find(
-
-        reserva => reserva.id === idReserva
-
-    );
-
-}
-
-/*=====================================================
-            CONTAR RESERVAS
-======================================================*/
-
-async function contarReservas(){
-
-    const reservas = await obtenerReservasFirebase();
-
-    return reservas.length;
-
-}
-
-/*=====================================================
-            LIMPIAR COLECCIÓN
-======================================================*/
-
-async function limpiarReservas(){
-
-    const reservas = await obtenerReservasFirebase();
-
-    for(const reserva of reservas){
-
-        await eliminarReservaFirebase(
-
-            reserva.id
-
-        );
-
-    }
-
-    console.log(
-
-        "Todas las reservas fueron eliminadas."
-
-    );
-
-}
-
-/*=====================================================
-            EXPORTAR FUNCIONES
-======================================================*/
-
-window.FirebaseDB.eliminarReserva =
-
-    eliminarReservaFirebase;
-
-window.FirebaseDB.liberarRegalo =
-
-    liberarRegalo;
-
-window.FirebaseDB.obtenerReservaPorId =
-
-    obtenerReserva;
-
-window.FirebaseDB.contarReservas =
-
-    contarReservas;
-
-/*
-    IMPORTANTE (seguridad):
-    "limpiarReservas()" borra TODA la colección de reservas.
-    A propósito NO se expone en window.FirebaseDB, porque
-    cualquier persona podría abrir la consola del navegador
-    en la página pública y ejecutarla, borrando todas las
-    reservas de los invitados. Si el organizador necesita
-    usarla, hazlo manualmente desde la consola de Firebase
-    (Firestore) o llama a limpiarReservas() directamente
-    desde este archivo en un entorno controlado, nunca
-    colgada del objeto global de una página pública.
-    Lo mismo aplica idealmente a eliminarReserva/liberarRegalo:
-    protégelas con Firestore Security Rules (por ejemplo,
-    exigiendo autenticación de organizador) y no solo con
-    "no exponerlas en window".
-*/
-
-/*=====================================================
-                FIN PARTE 4
-======================================================*/
-/*=====================================================
-                FIREBASE.JS
-                PARTE 5
-======================================================*/
+window.FirebaseDB.escucharReservas = escucharReservas;
 
 /*=====================================================
             ESTADO FIREBASE
@@ -586,19 +270,11 @@ const FirebaseService = {
 
 };
 
-/*=====================================================
-            VERIFICAR CONEXIÓN
-======================================================*/
-
 async function verificarFirebase(){
 
     try{
 
-        await getDocs(
-
-            collection(db, COLLECTION)
-
-        );
+        await getDocs(collection(db, CONTADORES));
 
         FirebaseService.conectado = true;
 
@@ -621,27 +297,17 @@ async function verificarFirebase(){
 
 }
 
-/*=====================================================
-            OBTENER ESTADO
-======================================================*/
-
 function estadoFirebase(){
 
     return{
 
         conectado: FirebaseService.conectado,
 
-        ultimaActualizacion:
-
-            FirebaseService.ultimaActualizacion
+        ultimaActualizacion: FirebaseService.ultimaActualizacion
 
     };
 
 }
-
-/*=====================================================
-            RECONECTAR
-======================================================*/
 
 async function reconectarFirebase(){
 
@@ -659,10 +325,6 @@ async function reconectarFirebase(){
 
 }
 
-/*=====================================================
-            INICIALIZAR FIREBASE
-======================================================*/
-
 async function iniciarFirebase(){
 
     console.log("================================");
@@ -679,17 +341,13 @@ async function iniciarFirebase(){
 
 }
 
-/*=====================================================
-            EVENTOS
-======================================================*/
-
-window.addEventListener("online",()=>{
+window.addEventListener("online", () => {
 
     reconectarFirebase();
 
 });
 
-window.addEventListener("offline",()=>{
+window.addEventListener("offline", () => {
 
     FirebaseService.conectado = false;
 
@@ -697,31 +355,17 @@ window.addEventListener("offline",()=>{
 
 });
 
-/*=====================================================
-            EXPORTAR
-======================================================*/
-
 window.FirebaseDB.estado = estadoFirebase;
 
 window.FirebaseDB.reconectar = reconectarFirebase;
 
 window.FirebaseDB.iniciar = iniciarFirebase;
 
-/*=====================================================
-            INICIAR
-======================================================*/
+document.addEventListener("DOMContentLoaded", () => {
 
-document.addEventListener(
+    iniciarFirebase();
 
-    "DOMContentLoaded",
-
-    ()=>{
-
-        iniciarFirebase();
-
-    }
-
-);
+});
 
 /*=====================================================
                 FIN FIREBASE.JS
